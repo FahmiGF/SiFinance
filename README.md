@@ -7,7 +7,7 @@ SiFinance adalah aplikasi pengelolaan keuangan pribadi dan keluarga yang dikemba
 Repositori ini berisi pengembangan aplikasi Flutter berdasarkan [prototipe desain SiFinance](https://sifinance.framer.website/).
 
 > [!NOTE]
-> **Status pengembangan:** Tahap awal. Repositori ini dibuat menggunakan `flutter create sifinance`. Fitur-fitur di bawah masih berupa rencana berdasarkan prototipe dan belum diimplementasikan.
+> **Status pengembangan:** Tahap awal. Repositori ini dibuat menggunakan `flutter create sifinance`. Halaman AI Chat sudah diimplementasikan. Pengembangan fitur lainnya mengikuti rencana di bawah.
 
 ## Fitur yang Direncanakan
 
@@ -17,19 +17,21 @@ Repositori ini berisi pengembangan aplikasi Flutter berdasarkan [prototipe desai
 | **Pengelolaan Anggaran** | Menetapkan anggaran pengeluaran dan memantau penggunaannya. | Direncanakan |
 | **Pencatatan Transaksi Manual** | Mencatat pemasukan dan pengeluaran beserta detail transaksinya. | Direncanakan |
 | **Pencatatan Berbantuan AI** | Mempermudah pencatatan transaksi dengan bantuan kecerdasan buatan. | Direncanakan |
+| **AI Chat** | Balasan cepat, percakapan keuangan, dan lampiran gambar sesuai desain SiFinance. | Diimplementasikan |
 
 ## Teknologi
 
 - **Flutter** — Framework untuk pengembangan aplikasi lintas platform.
 - **Dart** — Bahasa pemrograman yang digunakan.
 
-Paket tambahan, penyimpanan data, dan integrasi AI akan didokumentasikan setelah dipilih dan diimplementasikan.
+AI Chat menggunakan HTTP, flutter_svg, image_picker, dan file_selector. Backend Node.js menghubungkan model Gemini dengan pemeriksaan topik khusus SiFinance dan keuangan.
 
 ## Memulai
 
 ### Prasyarat
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) sudah terpasang dan dikonfigurasi.
+- Flutter 3.47+ dengan Dart 3.13+. Batas minimum Dart disesuaikan dengan kode AI Chat dan SDK pengembangan yang tersedia.
 - Perangkat, emulator, atau browser yang mendukung Flutter.
 
 Periksa lingkungan pengembangan:
@@ -63,11 +65,52 @@ flutter run
 
 Untuk menjalankan pada perangkat tertentu, gunakan `flutter run -d <device-id>`.
 
-> Saat ini aplikasi masih menampilkan tampilan bawaan Flutter hingga antarmuka SiFinance selesai diimplementasikan.
+> Aplikasi membuka halaman AI Chat. Tanpa `API_BASE_URL`, aplikasi berjalan dalam mode demo dengan balasan contoh.
+
+### AI Chat
+
+Tampilan meliputi sapaan, empat balasan cepat, bubble pesan, avatar, waktu pesan, menu lampiran, preview gambar, retry, dan reset percakapan. Font Poppins dan aset Figma disimpan di `assets/`. Kode halaman tersedia di `lib/features/chat/`.
+
+Preview dapat dijalankan melalui browser.
+
+```bash
+flutter run -d chrome
+```
+
+Untuk memakai model AI, gunakan Node.js 22+, buat API key pada Google AI Studio, lalu salin konfigurasi berikut dan isi `GEMINI_API_KEY` di `server/.env`.
+
+```powershell
+Copy-Item server/.env.example server/.env
+cd server
+npm start
+```
+
+Jalankan Flutter dari root proyek pada terminal lain.
+
+```bash
+flutter run -d chrome --web-port 5173 --dart-define=API_BASE_URL=http://localhost:8080
+```
+
+Android Emulator menggunakan `--dart-define=API_BASE_URL=http://10.0.2.2:8080`. HTTP lokal diizinkan pada build debug Android. Konfigurasi Android menggunakan NDK `30.0.16248370` dan `kotlin.incremental=false` untuk mengatasi cache Kotlin lintas drive Windows.
+
+Backend memakai `gemini-3.5-flash-lite` dan free tier mengikuti kuota project Google. Nama model dapat diatur melalui `GEMINI_MODEL`. API key disimpan di server. Pemeriksaan topik dilakukan sebelum membuat jawaban dan sekali lagi sebelum jawaban ditampilkan. Respons pemeriksaan yang tidak valid menghasilkan penolakan tetap. Satu percakapan yang lolos memerlukan tiga panggilan model.
+
+Konteks produk dari laporan tersedia pada `server/context.md`. Data transaksi akun belum terhubung. Pengguna dapat mengirimkan angka dan gambar transaksi untuk analisis. Chat tersimpan selama halaman terbuka. Mode demo menggunakan respons tetap. Perilaku model nyata memerlukan pengujian dengan API key aktif, dan pemeriksaan model bersifat probabilistik.
+
+Gambar yang didukung adalah JPG, PNG, dan WebP dengan ukuran maksimal 4 MB. Ketersediaan kamera mengikuti platform. Riwayat yang dikirim pada pertanyaan lanjutan berisi teks. Lampirkan kembali gambar untuk analisis ulang.
+
+Pemeriksaan kode dan alur chat dapat dijalankan dengan perintah berikut.
+
+```bash
+flutter analyze
+flutter test
+cd server
+npm test
+```
 
 ## Struktur Proyek
 
-Repositori saat ini masih menggunakan struktur proyek bawaan Flutter:
+Struktur proyek mencakup aplikasi Flutter dan modul AI Chat pada `lib/features/chat/`, aset pada `assets/`, serta backend pada `server/`.
 
 ```text
 sifinance/
